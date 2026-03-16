@@ -1,10 +1,11 @@
-# Federated Edge Observability Config As Code Repo
+# RamenDR TechDemo Config As Code Repo
 
 ## What is this?
 
-This provides an Ansible Automation Platform config-as-code repository to run the Federated Edge Observability Validated Pattern.
+This provides an Ansible Automation Platform config-as-code which is a component of the RamenDR TechDemo
+Validated Pattern.
 
 ## How do I get started?
 
 1. The concepts here are derived from those in the Ansible Edge GitOps Validated Pattern.
-1. Check out the Federated Edge Observability [repository](https://github.com/validatedpatterns-sandbox/federated-edge-observability), which will use this repository by default as the config-as-code repo
+1. Check out the RamenDR TechDemo [repository](https://github.com/validatedpatterns-sandbox/ramendr-techdemo), which will use this repository by default as the config-as-code repo

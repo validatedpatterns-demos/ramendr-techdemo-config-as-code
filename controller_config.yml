@@ -1,7 +1,7 @@
 # vim: ft=yaml.ansible
 ---
 aap_organizations:
-  - name: Federated Edge Observability
+  - name: RamenDR TechDemo
     galaxy_credentials: Ansible Galaxy
 
 controller_settings:
@@ -11,59 +11,26 @@ controller_settings:
   - name: AWX_ROLES_ENABLED
     value: true
 
-controller_projects:
-  - name: Demo Project
-    state: absent
+controller_projects: []
+#  - name: Demo Project
+#    state: absent
 
-  - name: Federated Edge Observability GitOps
-    organization: Federated Edge Observability
-    scm_branch: main
-    scm_clean: "no"
-    scm_delete_on_update: "no"
-    scm_type: git
-    scm_update_on_launch: "yes"
-    scm_url: https://github.com/validatedpatterns-demos/rhvp.federated_edge_observability.git
-    wait: true
-    update_project: true
+#  - name: RamenDR TechDemo GitOps
+#    organization: RamenDR TechDemo
+#    scm_branch: main
+#    scm_clean: "no"
+#    scm_delete_on_update: "no"
+#    scm_type: git
+#    scm_update_on_launch: "yes"
+#    scm_url: https://github.com/validatedpatterns-demos/rhvp.federated_edge_observability.git
+#    wait: true
+#    update_project: true
 
-  - name: Federated Edge Observability Inventory
-    organization: Federated Edge Observability
-    scm_branch: main
-    scm_clean: "no"
-    scm_delete_on_update: "no"
-    scm_type: git
-    scm_update_on_launch: "yes"
-    scm_url: https://github.com/validatedpatterns-demos/federated-edge-observability-inventory.git
-    wait: true
-    update_project: true
+controller_schedules: []
 
-controller_schedules:
-  - name: OTEL Playbook
-    organization: Federated Edge Observability
-    unified_job_template: OTEL Playbook
-    rrule: DTSTART:20191219T130500Z RRULE:FREQ=MINUTELY;INTERVAL=10
+controller_inventories: []
 
-# This is an example of how to pass Helm variables to the IAC config
-controller_inventories:
-  - name: Edge Nodes
-    organization: Federated Edge Observability
-    kind: smart
-    host_filter: name__icontains=edgenode
-    inventory: Federated Edge Observability Static Inventory
-    variables:
-      otel_collector_cluster_domain: "{{ helm_values.global.localClusterDomain | default('example.com') }}"
-
-  - name: Federated Edge Observability Inventory
-    organization: Federated Edge Observability
-
-controller_inventory_sources:
-  - name: Federated Edge Observability Static Inventory
-    inventory: Federated Edge Observability Inventory
-    organization: Federated Edge Observability
-    source: scm
-    source_project: Federated Edge Observability Inventory
-    source_path: inventory
-    update_on_launch: true
+controller_inventory_sources: []
 
 controller_credential_types:
   - name: RHSMcredential
@@ -90,27 +57,6 @@ controller_credential_types:
 controller_templates:
   - name: Demo Job Template
     state: absent
-
-  - name: Ping Playbook
-    organization: Federated Edge Observability
-    project: Federated Edge Observability GitOps
-    job_type: run
-    playbook: playbooks/ping.yml
-    inventory: Edge Nodes
-    credentials:
-      - vm-private-key
-    execution_environment: Default execution environment
-
-  - name: OTEL Playbook
-    organization: Federated Edge Observability
-    project: Federated Edge Observability GitOps
-    job_type: run
-    playbook: playbooks/otel_playbook.yml
-    inventory: Edge Nodes
-    credentials:
-      - vm-private-key
-      - rhsm_credential
-    execution_environment: Default execution environment
 
 controller_credential_input_sources:
   - source_credential: Hashivault
