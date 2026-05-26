@@ -2,7 +2,7 @@
 
 Ansible Automation Platform config-as-code for the **RamenDR TechDemo** validated pattern.
 
-Consumed by AGOF to configure AAP Controller (Redis on RHEL VMs, Route 53 failover, etc.).
+Consumed by AGOF to configure AAP Controller (Redis on RHEL VMs, Route 53 failover, Windows DataSource, etc.).
 
 ## What It Creates in AAP
 
@@ -14,12 +14,7 @@ Consumed by AGOF to configure AAP Controller (Redis on RHEL VMs, Route 53 failov
 | Credential | vm_ssh_credential | Machine credential for SSH to RHEL VMs |
 | Job Template | Discover and Install Redis | Discovers Redis VM LB, registers RHEL, installs Redis |
 | Job Template | Setup AWS Route53 Failover | Route 53 failover CNAME records |
-
-## Windows desktop image (Helm, not AAP)
-
-The Windows `DataSource` is provisioned by the [edge-gitops-vms chart](https://github.com/validatedpatterns/edge-gitops-vms-chart) via `externalDataSources` and `registryCredentialExternalSecrets` in `ramendr-techdemo/overrides/values-egv-dr.yaml`. The `regionaldr-with-virt-chart` `edge-gitops-vms-deploy` job renders and applies those resources on **both** regional clusters.
-
-Quay credentials come from hub Vault (`global/privatevm-credentials`) through chart `ExternalSecret` objects — no AAP registry credential.
+| Job Template | Setup Windows DataSource | Windows image DataSource on spoke clusters |
 
 ## Secrets
 
@@ -38,6 +33,7 @@ Use `values-secret.yaml` (from `ramendr-techdemo/values-secret.yaml.template`).
 | vm_ssh_credential | `global/vm-ssh` | `username`, `privatekey` |
 | hub_k8s_credential | `hub/hub-k8s` | `host`, `token` |
 | rhsm_credential | `hub/rhsm` | `username`, `password` |
+| windows_registry_credential | `global/privatevm-credentials` | `accessKeyId`, `secretKey` |
 | aws_credential | `hub/aws` | `aws_access_key_id`, `aws_secret_access_key` |
 
 `admin_password` is discovered from the AAP Operator `aap-admin-password` secret (not in Vault).

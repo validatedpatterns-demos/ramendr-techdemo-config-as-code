@@ -79,6 +79,26 @@ controller_credential_types:
         K8S_AUTH_API_KEY: !unsafe "{{ api_key }}"
         K8S_AUTH_VERIFY_SSL: !unsafe "{{ verify_ssl | default(false) | string }}"
 
+  - name: 'Container Registry Credentials'
+    description: 'Injects registry username and password as extra vars (encrypted by AAP)'
+    kind: cloud
+    inputs:
+      fields:
+        - id: registry_username
+          type: string
+          label: Registry Username
+        - id: registry_password
+          type: string
+          label: Registry Password
+          secret: true
+      required:
+        - registry_username
+        - registry_password
+    injectors:
+      extra_vars:
+        windows_registry_username: !unsafe "{{ registry_username }}"
+        windows_registry_password: !unsafe "{{ registry_password }}"
+
   - name: 'RHSM Credentials'
     description: 'Injects rhsm_username and rhsm_password as extra vars (encrypted by AAP)'
     kind: cloud
@@ -124,6 +144,17 @@ controller_templates:
       - hub_k8s_credential
       - aws_credential
     ask_variables_on_launch: true
+
+  - name: 'Setup Windows DataSource'
+    organization: '{{ orgname_vault }}'
+    project: '{{ ramendr_project_name }}'
+    job_type: run
+    playbook: 'playbooks/setup_windows_datasource.yml'
+    inventory: 'RamenDR VM Inventory'
+    credentials:
+      - hub_k8s_credential
+      - windows_registry_credential
+    ask_variables_on_launch: false
 
 controller_schedules: []
 
@@ -175,6 +206,22 @@ controller_credential_input_sources:
       secret_backend: secret
       secret_path: hub/rhsm
       secret_key: password
+
+  - source_credential: Hashivault
+    target_credential: windows_registry_credential
+    input_field_name: registry_username
+    metadata:
+      secret_backend: secret
+      secret_path: global/privatevm-credentials
+      secret_key: accessKeyId
+
+  - source_credential: Hashivault
+    target_credential: windows_registry_credential
+    input_field_name: registry_password
+    metadata:
+      secret_backend: secret
+      secret_path: global/privatevm-credentials
+      secret_key: secretKey
 
   - source_credential: Hashivault
     target_credential: aws_credential
@@ -229,11 +276,18 @@ controller_credentials:
     inputs:
       url: 'https://galaxy.ansible.com/'
 
+  - name: windows_registry_credential
+    description: 'Quay.io credentials for Windows VM image (encrypted by AAP)'
+    organization: '{{ orgname_vault }}'
+    credential_type: 'Container Registry Credentials'
+
   - name: aws_credential
     description: 'AWS credentials for Route53 failover DNS'
     organization: '{{ orgname_vault }}'
     credential_type: 'Amazon Web Services'
 
 controller_launch_jobs:
+  - name: 'Setup Windows DataSource'
+    organization: '{{ orgname_vault }}'
   - name: 'Discover and Install Redis'
     organization: '{{ orgname_vault }}'
