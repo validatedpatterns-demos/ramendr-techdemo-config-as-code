@@ -1,0 +1,30 @@
+# AGOF Vault File for RamenDR TechDemo
+# DO NOT COMMIT THIS FILE WITH REAL VALUES
+#
+# Fill in the values below and load into Vault as the agof-vault-file secret.
+# See values-secret.yaml.template for how to reference this file.
+#
+# Note: admin_password is NOT needed here — AGOF automatically discovers it
+# from the aap-admin-password Kubernetes secret created by the AAP Operator.
+---
+rhsm_username: "YOUR_RHSM_USERNAME"
+rhsm_password: "YOUR_RHSM_PASSWORD"
+vm_ssh_private_key: |
+  -----BEGIN OPENSSH PRIVATE KEY-----
+  PASTE_YOUR_SSH_PRIVATE_KEY_HERE
+  -----END OPENSSH PRIVATE KEY-----
+
+# Hub cluster API credentials for the hub_k8s_credential (used by download_managed_kubeconfigs).
+# hub_k8s_host: oc whoami --show-server
+# hub_k8s_token: oc whoami -t  (or a long-lived service account token)
+hub_k8s_host: "https://api.YOUR_HUB_CLUSTER.example.com:6443"
+hub_k8s_token: "sha256~YOUR_TOKEN_HERE"
+
+# AWS credentials for Route53 failover DNS (Setup AWS Route53 Failover job).
+# aws_access_key_id and aws_secret_access_key from ~/.aws/credentials or IAM.
+aws_access_key_id: "YOUR_AWS_ACCESS_KEY_ID"
+aws_secret_access_key: "YOUR_AWS_SECRET_ACCESS_KEY"
+
+# Quay.io credentials for pulling the Windows VM image (DataSource setup).
+windows_registry_username: "YOUR_QUAY_ROBOT_USERNAME"
+windows_registry_password: "YOUR_QUAY_ROBOT_PASSWORD"
