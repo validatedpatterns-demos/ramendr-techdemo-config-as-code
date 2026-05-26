@@ -44,7 +44,7 @@ controller_projects:
     scm_delete_on_update: 'no'
     scm_type: git
     scm_update_on_launch: 'yes'
-    scm_url: 'https://github.com/validatedpatterns-demos/rhvp.ramendr_techdemo.git'
+    scm_url: 'https://github.com/OAharoni-RedHat/rhvp.ramendr_techdemo.git'
 
 controller_inventories:
   - name: 'RamenDR VM Inventory'
