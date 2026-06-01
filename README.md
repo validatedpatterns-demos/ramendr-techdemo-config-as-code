@@ -2,19 +2,18 @@
 
 Ansible Automation Platform config-as-code for the **RamenDR TechDemo** validated pattern.
 
-Consumed by AGOF to configure AAP Controller (Redis on RHEL VMs, Route 53 failover, Windows DataSource, etc.).
+Consumed by AGOF to configure AAP Controller (Redis on RHEL VMs, Route 53 failover, etc.).
 
 ## What It Creates in AAP
 
 | Resource | Name | Purpose |
 |----------|------|---------|
 | Organization | RamenDR TechDemo | Top-level org for all resources |
-| Project | RamenDR TechDemo Ansible Collection | SCM project for [rhvp.ramendr_techdemo](https://github.com/OAharoni-RedHat/rhvp.ramendr_techdemo) |
+| Project | RamenDR TechDemo Ansible Collection | SCM project for [rhvp.ramendr_techdemo](https://github.com/validatedpatterns-demos/ramendr-techdemo-config-as-code) |
 | Inventory | RamenDR VM Inventory | Placeholder — playbooks discover hosts dynamically |
 | Credential | vm_ssh_credential | Machine credential for SSH to RHEL VMs |
 | Job Template | Discover and Install Redis | Discovers Redis VM LB, registers RHEL, installs Redis |
 | Job Template | Setup AWS Route53 Failover | Route 53 failover CNAME records |
-| Job Template | Setup Windows DataSource | Windows image DataSource on spoke clusters |
 
 ## Secrets
 
@@ -33,7 +32,6 @@ Use `values-secret.yaml` (from `ramendr-techdemo/values-secret.yaml.template`).
 | vm_ssh_credential | `global/vm-ssh` | `username`, `privatekey` |
 | hub_k8s_credential | `hub/hub-k8s` | `host`, `token` |
 | rhsm_credential | `hub/rhsm` | `username`, `password` |
-| windows_registry_credential | `global/privatevm-credentials` | `accessKeyId`, `secretKey` |
 | aws_credential | `hub/aws` | `aws_access_key_id`, `aws_secret_access_key` |
 
 `admin_password` is discovered from the AAP Operator `aap-admin-password` secret (not in Vault).
@@ -46,7 +44,7 @@ In `ramendr-techdemo/overrides/values-aap-config-rdr.yaml`:
 
 ```yaml
 agof:
-  iac_repo: https://github.com/OAharoni-RedHat/ramendr-techdemo-config-as-code.git
+  iac_repo: https://github.com/validatedpatterns-demos/ramendr-techdemo-config-as-code.git
   iac_revision: main
   vaultFileKey: ""
   doAutoHubVaultConfig: true
