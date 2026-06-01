@@ -1,79 +1,166 @@
 # vim: ft=yaml.ansible
 ---
-aap_organizations:
-  - name: RamenDR TechDemo
-    galaxy_credentials: Ansible Galaxy
+# AAP 2.5 compatibility aliases
+aap_username: '{{ controller_username_vault }}'
+aap_password: '{{ controller_password_vault }}'
+aap_organizations: '{{ controller_organizations }}'
+aap_validate_certs: '{{ controller_validate_certs }}'
+aap_configuration_async_retries: '{{ controller_configuration_async_retries }}'
+
+orgname_vault: 'RamenDR TechDemo'
+
+controller_username_vault: 'admin'
+controller_password_vault: '{{ admin_password }}'
+
+controller_username: '{{ controller_username_vault }}'
+controller_password: '{{ controller_password_vault }}'
+
+controller_configuration_async_retries: 30
+
+controller_validate_certs: false
+
+ramendr_project_name: 'RamenDR TechDemo Ansible Collection'
 
 controller_settings:
   - name: AWX_COLLECTIONS_ENABLED
     value: true
-
   - name: AWX_ROLES_ENABLED
     value: true
 
-controller_projects: []
-#  - name: Demo Project
-#    state: absent
+# Galaxy credential is attached in controller_organizations below. The
+# infra.aap_configuration dispatch processes controller_credentials before
+# controller_organizations, so the credential exists by the time the org
+# is updated.
+controller_organizations:
+  - name: '{{ orgname_vault }}'
+    galaxy_credentials:
+      - ansible_galaxy_credential
 
-#  - name: RamenDR TechDemo GitOps
-#    organization: RamenDR TechDemo
-#    scm_branch: main
-#    scm_clean: "no"
-#    scm_delete_on_update: "no"
-#    scm_type: git
-#    scm_update_on_launch: "yes"
-#    scm_url: https://github.com/validatedpatterns-demos/rhvp.federated_edge_observability.git
-#    wait: true
-#    update_project: true
+controller_projects:
+  - name: '{{ ramendr_project_name }}'
+    organization: '{{ orgname_vault }}'
+    scm_branch: main
+    scm_clean: 'no'
+    scm_delete_on_update: 'no'
+    scm_type: git
+    scm_update_on_launch: 'yes'
+    scm_url: 'https://github.com/validatedpatterns-demos/rhvp.ramendr_techdemo.git'
 
-controller_schedules: []
-
-controller_inventories: []
-
-controller_inventory_sources: []
+controller_inventories:
+  - name: 'RamenDR VM Inventory'
+    organization: '{{ orgname_vault }}'
+    description: >-
+      Placeholder inventory. The discover_and_prep_redis playbook builds
+      its own in-memory inventory dynamically via the Kubernetes API.
 
 controller_credential_types:
-  - name: RHSMcredential
-    description: RHSM Credentials
+  - name: 'OpenShift API via Environment'
+    description: 'Injects K8S_AUTH_HOST, K8S_AUTH_API_KEY, K8S_AUTH_VERIFY_SSL as env vars'
+    kind: cloud
+    inputs:
+      fields:
+        - id: host
+          type: string
+          label: API Host URL
+        - id: api_key
+          type: string
+          label: Bearer Token
+          secret: true
+        - id: verify_ssl
+          type: boolean
+          label: Verify SSL
+          default: false
+      required:
+        - host
+        - api_key
+    injectors:
+      env:
+        K8S_AUTH_HOST: !unsafe "{{ host }}"
+        K8S_AUTH_API_KEY: !unsafe "{{ api_key }}"
+        K8S_AUTH_VERIFY_SSL: !unsafe "{{ verify_ssl | default(false) | string }}"
+
+
+  - name: 'RHSM Credentials'
+    description: 'Injects rhsm_username and rhsm_password as extra vars (encrypted by AAP)'
     kind: cloud
     inputs:
       fields:
         - id: username
           type: string
-          label: RHSM User name
+          label: RHSM Username
           secret: true
         - id: password
           type: string
-          label: RHSM password
+          label: RHSM Password
           secret: true
       required:
         - username
         - password
     injectors:
       extra_vars:
-        rhsm_username: "{  { username }}"
-        rhsm_password: "{  { password }}"
+        rhsm_username: !unsafe "{{ username }}"
+        rhsm_password: !unsafe "{{ password }}"
 
 controller_templates:
-  - name: Demo Job Template
-    state: absent
+  - name: 'Discover and Install Redis'
+    organization: '{{ orgname_vault }}'
+    project: '{{ ramendr_project_name }}'
+    job_type: run
+    playbook: 'playbooks/discover_and_prep_redis.yml'
+    inventory: 'RamenDR VM Inventory'
+    credentials:
+      - vm_ssh_credential
+      - hub_k8s_credential
+      - rhsm_credential
+    ask_variables_on_launch: false
+
+  - name: 'Setup AWS Route53 Failover'
+    organization: '{{ orgname_vault }}'
+    project: '{{ ramendr_project_name }}'
+    job_type: run
+    playbook: 'playbooks/setup_aws_alb.yml'
+    inventory: 'RamenDR VM Inventory'
+    credentials:
+      - vm_ssh_credential
+      - hub_k8s_credential
+      - aws_credential
+    ask_variables_on_launch: true
+
+
+controller_schedules: []
 
 controller_credential_input_sources:
   - source_credential: Hashivault
-    target_credential: vm-private-key
+    target_credential: vm_ssh_credential
     input_field_name: username
     metadata:
       secret_backend: secret
-      secret_path: hub/vm-ssh
+      secret_path: global/vm-ssh
       secret_key: username
 
   - source_credential: Hashivault
-    target_credential: vm-private-key
+    target_credential: vm_ssh_credential
     input_field_name: ssh_key_data
     metadata:
       secret_backend: secret
-      secret_path: hub/vm-ssh
+      secret_path: global/vm-ssh
       secret_key: privatekey
+
+  - source_credential: Hashivault
+    target_credential: hub_k8s_credential
+    input_field_name: host
+    metadata:
+      secret_backend: secret
+      secret_path: hub/hub-k8s
+      secret_key: host
+
+  - source_credential: Hashivault
+    target_credential: hub_k8s_credential
+    input_field_name: api_key
+    metadata:
+      secret_backend: secret
+      secret_path: hub/hub-k8s
+      secret_key: token
 
   - source_credential: Hashivault
     target_credential: rhsm_credential
@@ -91,10 +178,27 @@ controller_credential_input_sources:
       secret_path: hub/rhsm
       secret_key: password
 
+
+  - source_credential: Hashivault
+    target_credential: aws_credential
+    input_field_name: username
+    metadata:
+      secret_backend: secret
+      secret_path: hub/aws
+      secret_key: aws_access_key_id
+
+  - source_credential: Hashivault
+    target_credential: aws_credential
+    input_field_name: password
+    metadata:
+      secret_backend: secret
+      secret_path: hub/aws
+      secret_key: aws_secret_access_key
+
 controller_credentials:
   - name: Hashivault
     description: In-Cluster Hashicorp vault lookup
-    organization: Federated Edge Observability
+    organization: '{{ orgname_vault }}'
     credential_type: HashiCorp Vault Secret Lookup
     inputs:
       url: "{{ secrets['vault_url'] }}"
@@ -102,12 +206,38 @@ controller_credentials:
       cacert: "{{ secrets['vault_ca'] }}"
       api_version: v2
 
-  - name: rhsm_credential
-    description: RHSM credential registering RHEL VMs
-    organization: Federated Edge Observability
-    credential_type: RHSMcredential
-
-  - name: vm-private-key
-    description: Machine credential for virtual machines
-    organization: Federated Edge Observability
+  - name: vm_ssh_credential
+    description: 'SSH credential for RHEL VMs managed by edge-gitops-vms'
+    organization: '{{ orgname_vault }}'
     credential_type: Machine
+    inputs:
+      become_method: sudo
+
+  - name: hub_k8s_credential
+    description: 'Hub cluster API via environment injection'
+    organization: '{{ orgname_vault }}'
+    credential_type: 'OpenShift API via Environment'
+    inputs:
+      verify_ssl: false
+
+  - name: rhsm_credential
+    description: 'RHSM subscription credentials (encrypted by AAP)'
+    organization: '{{ orgname_vault }}'
+    credential_type: 'RHSM Credentials'
+
+  - name: ansible_galaxy_credential
+    description: 'Public Ansible Galaxy for collection downloads during project sync'
+    organization: '{{ orgname_vault }}'
+    credential_type: 'Ansible Galaxy/Automation Hub API Token'
+    inputs:
+      url: 'https://galaxy.ansible.com/'
+
+
+  - name: aws_credential
+    description: 'AWS credentials for Route53 failover DNS'
+    organization: '{{ orgname_vault }}'
+    credential_type: 'Amazon Web Services'
+
+controller_launch_jobs:
+  - name: 'Discover and Install Redis'
+    organization: '{{ orgname_vault }}'
