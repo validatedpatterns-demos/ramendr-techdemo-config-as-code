@@ -54,30 +54,24 @@ controller_inventories:
       its own in-memory inventory dynamically via the Kubernetes API.
 
 controller_credential_types:
-  - name: 'OpenShift API via Environment'
-    description: 'Injects K8S_AUTH_HOST, K8S_AUTH_API_KEY, K8S_AUTH_VERIFY_SSL as env vars'
+  - name: 'OpenShift Kubeconfig via Environment'
+    description: 'Writes kubeconfig to a temp file and injects KUBECONFIG / K8S_AUTH_KUBECONFIG env vars'
     kind: cloud
     inputs:
       fields:
-        - id: host
+        - id: kubeconfig
           type: string
-          label: API Host URL
-        - id: api_key
-          type: string
-          label: Bearer Token
+          label: Kubeconfig YAML
           secret: true
-        - id: verify_ssl
-          type: boolean
-          label: Verify SSL
-          default: false
+          multiline: true
       required:
-        - host
-        - api_key
+        - kubeconfig
     injectors:
+      file:
+        template.kubeconfig: !unsafe "{{ kubeconfig }}"
       env:
-        K8S_AUTH_HOST: !unsafe "{{ host }}"
-        K8S_AUTH_API_KEY: !unsafe "{{ api_key }}"
-        K8S_AUTH_VERIFY_SSL: !unsafe "{{ verify_ssl | default(false) | string }}"
+        KUBECONFIG: !unsafe "{{ tower.filename.kubeconfig }}"
+        K8S_AUTH_KUBECONFIG: !unsafe "{{ tower.filename.kubeconfig }}"
 
 
   - name: 'RHSM Credentials'
@@ -148,19 +142,11 @@ controller_credential_input_sources:
 
   - source_credential: Hashivault
     target_credential: hub_k8s_credential
-    input_field_name: host
+    input_field_name: kubeconfig
     metadata:
       secret_backend: secret
       secret_path: hub/hub-k8s
-      secret_key: host
-
-  - source_credential: Hashivault
-    target_credential: hub_k8s_credential
-    input_field_name: api_key
-    metadata:
-      secret_backend: secret
-      secret_path: hub/hub-k8s
-      secret_key: token
+      secret_key: kubeconfig
 
   - source_credential: Hashivault
     target_credential: rhsm_credential
@@ -214,11 +200,10 @@ controller_credentials:
       become_method: sudo
 
   - name: hub_k8s_credential
-    description: 'Hub cluster API via environment injection'
+    description: 'Hub cluster kubeconfig via environment injection'
     organization: '{{ orgname_vault }}'
-    credential_type: 'OpenShift API via Environment'
-    inputs:
-      verify_ssl: false
+    credential_type: 'OpenShift Kubeconfig via Environment'
+    inputs: {}
 
   - name: rhsm_credential
     description: 'RHSM subscription credentials (encrypted by AAP)'
