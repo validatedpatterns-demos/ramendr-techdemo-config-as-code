@@ -145,7 +145,7 @@ controller_credential_input_sources:
     input_field_name: kubeconfig
     metadata:
       secret_backend: secret
-      secret_path: hub/hub-k8s
+      secret_path: hub/hub_k8s
       secret_key: kubeconfig
 
   - source_credential: Hashivault
